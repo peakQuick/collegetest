@@ -323,6 +323,7 @@ const MODES = {
       { questions: 'web/1.json', answers: 'web/answers/1.json' },
       { questions: 'web/2.json', answers: 'web/answers/2.json' },
       { questions: 'web/3.json', answers: 'web/answers/3.json' },
+      { questions: 'web/4.json', answers: 'web/answers/4.json' },
     ]
   },
   java: {
@@ -331,6 +332,7 @@ const MODES = {
       { questions: 'java/1.json', answers: 'java/answers/1.json' },
       { questions: 'java/2.json', answers: 'java/answers/2.json' },
       { questions: 'java/3.json', answers: 'java/answers/3.json' },
+      { questions: 'java/4.json', answers: 'java/answers/4.json' },
     ]
   }
 };
@@ -453,7 +455,15 @@ function buildVariantSelector() {
   for (const v of allVariants) {
     const opt = document.createElement('option');
     opt.value = v.variant;
-    opt.textContent = `Вариант ${v.variant}`;
+    
+    // Названия вариантов для отображения (8->старый, 10->8 новый и т.д.)
+    let label = `Вариант ${v.variant}`;
+    if (v.variant === 8) label = 'Вариант 8 (старый)';
+    else if (v.variant === 9) label = 'Вариант 9 (старый)';
+    else if (v.variant === 10) label = 'Вариант 8 (НОВЫЙ)';
+    else if (v.variant === 11) label = 'Вариант 9 (НОВЫЙ)';
+    
+    opt.textContent = label;
     sel.appendChild(opt);
   }
   sel.addEventListener('change', () => selectVariant(+sel.value));
