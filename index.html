@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Флешкарточки — Экзамен</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f8f8f8;
+    --surface: #ffffff;
+    --border: #e0e0e0;
+    --text: #111111;
+    --muted: #666666;
+    --correct: #1a6b2a;
+    --correct-bg: #e8f5eb;
+    --accent: #111111;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px;
+  }
+
+  h1 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    margin-bottom: 20px;
+    color: var(--muted);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+  }
+
+  .mode-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px;
+  }
+
+  .mode-tab {
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    padding: 8px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+    flex: 1;
+    min-width: 80px;
+  }
+
+  .mode-tab.active {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 24px;
+    justify-content: center;
+  }
+
+  select, button {
+    font-family: inherit;
+    font-size: 0.875rem;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  select:focus, button:focus { border-color: #888; }
+
+  button:hover { background: #f0f0f0; }
+
+  button.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .progress {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  /* Card */
+  .scene {
+    width: 100%;
+    max-width: 640px;
+    height: 420px;
+    perspective: 1200px;
+    margin-bottom: 20px;
+  }
+
+  .card {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+  }
+
+  .face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 32px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .face-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  .question-text {
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.5;
+    margin-bottom: 20px;
+  }
+
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .option {
+    display: flex;
+    gap: 10px;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+  }
+
+  .option-key {
+    font-weight: 600;
+    min-width: 18px;
+    color: var(--muted);
+  }
+
+  /* Back face correct highlighting */
+  .option.correct {
+    background: var(--correct-bg);
+    border-color: #b3daba;
+  }
+
+  .option.correct .option-key {
+    color: var(--correct);
+  }
+
+  .option.correct .option-text {
+    color: var(--correct);
+    font-weight: 500;
+  }
+
+  /* Incorrect highlighting */
+  .option.incorrect {
+    background: #ffebeb;
+    border-color: #f5b3b3;
+  }
+
+  .option.incorrect .option-key {
+    color: #d12c2c;
+  }
+
+  .option.incorrect .option-text {
+    color: #d12c2c;
+    font-weight: 500;
+  }
+
+  .option:hover {
+    background: #f0f0f0;
+  }
+
+  /* Navigation */
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .nav button {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 1.1rem;
+  }
+
+  .nav input[type=number] {
+    font-family: inherit;
+    font-size: 0.875rem;
+    width: 60px;
+    text-align: center;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 4px;
+    outline: none;
+  }
+
+  .nav input:focus { border-color: #888; }
+
+  .loading, .error {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-top: 40px;
+  }
+
+  @media (max-width: 640px) {
+    body { padding: 16px 12px; }
+    .card.flipped { transform: none; }
+    .scene {
+      height: auto;
+      min-height: 320px;
+      max-height: 70vh;
+    }
+    .card { position: relative; }
+    .face {
+      padding: 20px 16px;
+      position: relative;
+      height: auto;
+      min-height: 280px;
+    }
+    .question-text { font-size: 1.05rem; }
+    .option { font-size: 0.95rem; padding: 10px 8px; }
+    select, button {
+      min-height: 44px;
+      padding: 8px 14px;
+      font-size: 1rem;
+    }
+    .nav button {
+      width: 48px;
+      height: 48px;
+      font-size: 1.3rem;
+    }
+    .nav input[type=number] {
+      width: 70px;
+      height: 48px;
+      font-size: 1rem;
+    }
+    .mode-tab { padding: 10px 16px; font-size: 1rem; }
+    .hint { font-size: 0.85rem; margin-bottom: 12px; }
+  }
+
+  @media (max-width: 380px) {
+    .question-text { font-size: 0.95rem; }
+    .option { font-size: 0.85rem; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Флешкарточки</h1>
+
+<div class="mode-tabs" id="modeTabs">
+  <button data-mode="web" class="mode-tab active">Web</button>
+  <button data-mode="java" class="mode-tab">Java</button>
+</div>
+
+<div class="controls">
+  <select id="variantSelect"></select>
+  <button id="shuffleBtn">Перемешать</button>
+  <button id="resetBtn">Сбросить</button>
+</div>
+
+<div class="progress" id="progress"></div>
+
+<div class="scene" id="scene">
+  <div class="card" id="card">
+    <div class="face front" id="frontFace"></div>
+  </div>
+</div>
+
+<div class="nav" style="margin-top: 12px;">
+  <button onclick="prev()">←</button>
+  <input type="number" id="cardInput" min="1" onchange="goTo(this.value - 1)">
+  <button onclick="next()">→</button>
+</div>
+
+<script>
+const MODES = {
+  web: {
+    label: 'Web',
+    files: [
+      { questions: 'web/1.json', answers: 'web/answers/1.json' },
+      { questions: 'web/2.json', answers: 'web/answers/2.json' },
+      { questions: 'web/3.json', answers: 'web/answers/3.json' },
+    ]
+  },
+  java: {
+    label: 'Java',
+    files: [
+      { questions: 'java/1.json', answers: 'java/answers/1.json' },
+      { questions: 'java/2.json', answers: 'java/answers/2.json' },
+      { questions: 'java/3.json', answers: 'java/answers/3.json' },
+    ]
+  }
+};
+
+let currentMode = 'web';
+let allVariants = [];   // { variant, questions: [...], answers: {...} }
+let currentVariant = null;
+let deck = [];          // ordered/shuffled array of question objects
+let idx = 0;
+let isShuffled = false;
+let userAnswers = {};
+
+function normalizeWebVariant(varObj, ansObj) {
+  return {
+    variant: varObj.variant,
+    questions: varObj.questions.map(q => ({
+      question_number: q.question_number,
+      text: q.text,
+      options: q.options
+    })),
+    answers: ansObj.answers
+  };
+}
+
+function normalizeJavaVariant(varObj, ansObj) {
+  return {
+    variant: varObj.variant_id,
+    questions: varObj.questions.map(q => ({
+      question_number: q.id,
+      text: q.text,
+      options: q.options
+    })),
+    answers: ansObj.answers
+  };
+}
+
+async function loadMode(mode) {
+  const config = MODES[mode];
+  if (!config) return;
+  currentMode = mode;
+
+  document.getElementById('progress').textContent = 'Загрузка…';
+
+  try {
+    const results = await Promise.all(config.files.map(async f => {
+      const [q, a] = await Promise.all([fetch(f.questions), fetch(f.answers)]);
+      return { qData: await q.json(), aData: await a.json() };
+    }));
+
+    allVariants = [];
+    for (const { qData, aData } of results) {
+      // Web format: array of objects; Java format: { variants: [...] }
+      const variants = Array.isArray(qData) ? qData : (qData.variants || []);
+      for (const varObj of variants) {
+        const variantId = varObj.variant || varObj.variant_id;
+        const ansObj = aData.find(a => a.variant === variantId);
+        if (ansObj) {
+          const normalized = mode === 'java'
+            ? normalizeJavaVariant(varObj, ansObj)
+            : normalizeWebVariant(varObj, ansObj);
+          allVariants.push(normalized);
+        }
+      }
+    }
+
+    allVariants.sort((a, b) => a.variant - b.variant);
+    buildVariantSelector();
+
+    const state = loadState();
+    let targetVariant = allVariants[0];
+    if (state && state.mode === mode) {
+      const found = allVariants.find(v => v.variant === state.variant);
+      if (found) targetVariant = found;
+      if (state.isShuffled) {
+        deck = [...targetVariant.questions].sort(() => Math.random() - 0.5);
+        isShuffled = true;
+      } else {
+        deck = [...targetVariant.questions];
+        isShuffled = false;
+      }
+      userAnswers = state.userAnswers || {};
+      idx = Math.max(0, Math.min(deck.length, state.idx || 0));
+    } else {
+      deck = [...targetVariant.questions];
+      idx = 0;
+      isShuffled = false;
+      userAnswers = {};
+    }
+    currentVariant = targetVariant;
+    document.getElementById('variantSelect').value = targetVariant.variant;
+    render();
+  } catch (e) {
+    document.getElementById('progress').textContent = '';
+    document.getElementById('frontFace').innerHTML = `<div class="face-label">Ошибка</div><div class="question-text" style="color:#c00">${e.message}</div>`;
+  }
+}
+
+function saveState() {
+  try {
+    localStorage.setItem('flashcardState', JSON.stringify({
+      mode: currentMode,
+      variant: currentVariant ? currentVariant.variant : null,
+      idx,
+      isShuffled,
+      userAnswers
+    }));
+  } catch (e) {}
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem('flashcardState');
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+
+function buildVariantSelector() {
+  const sel = document.getElementById('variantSelect');
+  sel.innerHTML = '';
+  for (const v of allVariants) {
+    const opt = document.createElement('option');
+    opt.value = v.variant;
+    opt.textContent = `Вариант ${v.variant}`;
+    sel.appendChild(opt);
+  }
+  sel.addEventListener('change', () => selectVariant(+sel.value));
+}
+
+function selectVariant(variantNum) {
+  currentVariant = allVariants.find(v => v.variant === variantNum);
+  document.getElementById('variantSelect').value = variantNum;
+  isShuffled = false;
+  deck = [...currentVariant.questions];
+  idx = 0;
+  userAnswers = {};
+  render();
+  saveState();
+}
+
+function render() {
+  if (!currentVariant || deck.length === 0) return;
+
+  const total = deck.length;
+  
+  // Экран результатов
+  if (idx === total) {
+    document.getElementById('frontFace').innerHTML = buildResults();
+    document.getElementById('progress').textContent = `Результаты`;
+    const inp = document.getElementById('cardInput');
+    inp.value = idx + 1;
+    inp.max = total + 1;
+    saveState();
+    return;
+  }
+
+  const q = deck[idx];
+  
+  document.getElementById('frontFace').innerHTML = buildFront(q);
+
+  document.getElementById('progress').textContent = `${idx + 1} / ${total}`;
+
+  const inp = document.getElementById('cardInput');
+  inp.value = idx + 1;
+  inp.max = total + 1;
+
+  saveState();
+}
+
+function esc(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function selectAnswer(qNum, key) {
+  userAnswers[qNum] = key;
+  render();
+}
+
+function buildFront(q) {
+  const correctAns = currentVariant.answers[String(q.question_number)];
+  const userAns = userAnswers[q.question_number];
+
+  return `
+    <div class="face-label">Вопрос ${q.question_number}</div>
+    <div class="question-text">${esc(q.text)}</div>
+    <div class="options">
+      ${Object.entries(q.options).map(([k, v]) => {
+        let className = 'option';
+        if (userAns) {
+          if (k === correctAns) className += ' correct';
+          else if (k === userAns) className += ' incorrect';
+        }
+        return `
+        <div class="${className}" style="cursor: pointer;" onclick="selectAnswer('${q.question_number}', '${k}')">
+          <span class="option-key">${k}.</span>
+          <span class="option-text">${esc(v)}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function buildResults() {
+  let correctCount = 0;
+  deck.forEach(q => {
+    if (userAnswers[q.question_number] === currentVariant.answers[String(q.question_number)]) {
+      correctCount++;
+    }
+  });
+  
+  const pct = Math.round((correctCount / deck.length) * 100) || 0;
+  
+  return `
+    <div class="face-label">Результаты</div>
+    <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 16px;">
+      <div style="font-size: 1.1rem; color: var(--muted);">Ваш результат:</div>
+      <div style="font-size: 2.5rem; font-weight: bold; color: var(--accent);">${correctCount} / ${deck.length}</div>
+      <div style="font-size: 1rem; color: ${pct >= 70 ? 'var(--correct)' : 'var(--muted)'};">Точность: ${pct}%</div>
+      <button onclick="document.getElementById('resetBtn').click()" style="margin-top: 24px; padding: 10px 24px; font-weight: 500; font-size: 1rem; background: var(--accent); color: #fff; border: none; border-radius: 8px; cursor: pointer;">Пройти заново</button>
+    </div>
+  `;
+}
+
+function next() {
+  if (idx < deck.length) {
+    idx++;
+    render();
+  }
+}
+
+function prev() {
+  if (idx > 0) {
+    idx--;
+    render();
+  }
+}
+
+function goTo(i) {
+  i = Math.max(0, Math.min(deck.length, +i));
+  if (!isNaN(i)) { idx = i; render(); }
+}
+
+document.getElementById('modeTabs').addEventListener('click', e => {
+  const btn = e.target.closest('.mode-tab');
+  if (!btn) return;
+  const mode = btn.dataset.mode;
+  if (mode === currentMode) return;
+  document.querySelectorAll('.mode-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadMode(mode);
+});
+
+document.getElementById('shuffleBtn').addEventListener('click', () => {
+  if (!currentVariant) return;
+  deck = [...deck].sort(() => Math.random() - 0.5);
+  isShuffled = true;
+  userAnswers = {};
+  idx = 0;
+  render();
+});
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if (!currentVariant) return;
+  deck = [...currentVariant.questions];
+  isShuffled = false;
+  userAnswers = {};
+  idx = 0;
+  render();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next();
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prev();
+  else if (e.key >= '1' && e.key <= '9') {
+    // Optional: map number keys to options if you want
+  }
+});
+
+// Swipe support
+let touchStartX = 0;
+let touchStartY = 0;
+const scene = document.getElementById('scene');
+scene.addEventListener('touchstart', e => {
+  touchStartX = e.changedTouches[0].screenX;
+  touchStartY = e.changedTouches[0].screenY;
+}, { passive: true });
+scene.addEventListener('touchend', e => {
+  const touchEndX = e.changedTouches[0].screenX;
+  const touchEndY = e.changedTouches[0].screenY;
+  const dx = touchEndX - touchStartX;
+  const dy = touchEndY - touchStartY;
+  // Only handle horizontal swipes, ignore vertical scrolls
+  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+    if (dx < 0) next();
+    else prev();
+  }
+}, { passive: true });
+
+// Init: restore saved mode or default to web
+const initialState = loadState();
+if (initialState && initialState.mode && MODES[initialState.mode]) {
+  currentMode = initialState.mode;
+  document.querySelectorAll('.mode-tab').forEach(b => b.classList.toggle('active', b.dataset.mode === currentMode));
+}
+loadMode(currentMode);
+</script>
+</body>
+</html>
